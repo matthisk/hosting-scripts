@@ -1,13 +1,29 @@
 #!/bin/bash
-replacevhost=$2;
-replacedomain=$1;
-ava="/etc/apache2/sites-available";
-ena="/etc/apache2/sites-enabled";
+# Make Virtual Host v1.0
+# Author: Matthisk Heimensen
+#
+# This script makes a virtual host and creates a directory for it.
+# Optionally it can clone a git reposistory to this directory and
+
+ROOT_UID=0;         # Only users  with $UID 0 have root privileges
+E_NOTROOT=87;       # Non-root exit error
+
+replacedomain=$1;   # The domain to create a vhost for
+replacevhost=$2;    # Optional subdomain to create a vhost for
+
+AVA_DIR="/etc/apache2/sites-available";
+ENA_DIR="/etc/apache2/sites-enabled";
+
+# Run as root
+if [ "$UID" -ne "$ROOT_UID" ]; then
+    echo "Must be root to run this script."
+    exit $E_NOTROOT;
+fi
 
 if [[ ${replacedomain} == "" ]]; then
     echo "Usage: mkvhost <replacedomain> (<replacevhost>)";
     echo "Example: mkvhost example.com www";
-    echo "         will create the virtual host for www.example.com";
+    echo "will create the virtual host for www.example.com";
     exit 0;
 else
     if [[ ${replacevhost} == "" ]]; then
@@ -18,58 +34,58 @@ else
 fi
 
 # Create http host
-if [[ -e ${ava}/${vhost} ]]; then
-    echo "${ava}/${vhost} already exists. Skipping.";
-elif [[ -e ${ena}/${vhost} ]]; then
-    echo "${ena}/${vhost} already exists. Skipping.";
+if [[ -e ${AVA_DIR}/${vhost} ]]; then
+    echo "${AVA_DIR}/${vhost} already exists. Skipping.";
+elif [[ -e ${ENA_DIR}/${vhost} ]]; then
+    echo "${ENA_DIR}/${vhost} already exists. Skipping.";
 else
-    if [[ ! -e ${ava}/template.http ]]; then
-        echo "${ava}/template.http does not exist. Cannot create ${ena}/${vhost}.";
+    if [[ ! -e ${AVA_DIR}/template.http ]]; then
+        echo "${AVA_DIR}/template.http does not exist. Cannot create ${ENA_DIR}/${vhost}.";
     else
-        cat ${ava}/template.http | sed "s/replacevhost/${replacevhost}/g" | sed "s/replacedomain/${replacedomain}/g" > ${ava}/${vhost}
+        cat ${AVA_DIR}/template.http | sed "s/replacevhost/${replacevhost}/g" | sed "s/replacedomain/${replacedomain}/g" > ${AVA_DIR}/${vhost}
     fi
 fi
 
 # Create http ssl host
-if [[ -e ${ava}/${vhost}.ssl ]]; then
-    echo "${ava}/${vhost}.ssl already exists. Skipping.";
-elif [[ -e ${ena}/${vhost}.ssl ]]; then
-    echo "${ena}/${vhost}.ssl already exists. Skipping.";
+if [[ -e ${AVA_DIR}/${vhost}.ssl ]]; then
+    echo "${AVA_DIR}/${vhost}.ssl already exists. Skipping.";
+elif [[ -e ${ENA_DIR}/${vhost}.ssl ]]; then
+    echo "${ENA_DIR}/${vhost}.ssl already exists. Skipping.";
 else
-    if [[ ! -e ${ava}/template.http.ssl ]]; then
-        echo "${ava}/template.http.ssl does not exist. Cannot create ${ena}/${vhost}.ssl.";
+    if [[ ! -e ${AVA_DIR}/template.http.ssl ]]; then
+        echo "${AVA_DIR}/template.http.ssl does not exist. Cannot create ${ENA_DIR}/${vhost}.ssl.";
     else
-        cat ${ava}/template.http.ssl | sed "s/replacevhost/${replacevhost}/g" | sed "s/replacedomain/${replacedomain}/g" > ${ava}/${vhost}.ssl
+        cat ${AVA_DIR}/template.http.ssl | sed "s/replacevhost/${replacevhost}/g" | sed "s/replacedomain/${replacedomain}/g" > ${AVA_DIR}/${vhost}.ssl
     fi
 fi
 
 bool="n";
-echo -n "Should I enable ${ava}/${vhost}? ";
+echo -n "Should I enable ${AVA_DIR}/${vhost}? ";
 read bool;
 if [[ ${bool} == "y" || ${bool} == "Y" || ${bool} == "yes" || ${bool} == "YES" || ${bool} == "Yes" ]]; then
-    if [[ -e ${ena}/${vhost} ]]; then
-        echo "Host was already enabled.";
+    if [[ -e ${ENA_DIR}/${vhost} ]]; then
+        echo "Host was already ENA_DIRbled.";
     else
-        if [[ ! -e ${ava}/${vhost} ]]; then
-            echo "${ava}/${vhost} does not exist so I cannot enable it.";
+        if [[ ! -e ${AVA_DIR}/${vhost} ]]; then
+            echo "${AVA_DIR}/${vhost} does not exist so I cannot enable it.";
         else
-            echo "Running: cp ${ava}/${vhost} ${ena}/${vhost}";
+            echo "Running: cp ${AVA_DIR}/${vhost} ${ENA_DIR}/${vhost}";
             a2ensite ${vhost};
         fi
     fi
 fi
 
 bool="n";
-echo -n "Should I enable ${ava}/${vhost}.ssl? ";
+echo -n "Should I enable ${AVA_DIR}/${vhost}.ssl? ";
 read bool;
 if [[ ${bool} == "y" || ${bool} == "Y" || ${bool} == "yes" || ${bool} == "YES" || ${bool} == "Yes" ]]; then
-    if [[ -e ${ena}/${vhost}.ssl ]]; then
-        echo "Host was already enabled.";
+    if [[ -e ${ENA_DIR}/${vhost}.ssl ]]; then
+        echo "Host was already ENA_DIRbled.";
     else
-        if [[ ! -e ${ava}/${vhost}.ssl ]]; then
-            echo "${ava}/${vhost}.ssl does not exist so I cannot enable it.";
+        if [[ ! -e ${AVA_DIR}/${vhost}.ssl ]]; then
+            echo "${AVA_DIR}/${vhost}.ssl does not exist so I cannot enable it.";
         else
-            echo "Running: cp ${ava}/${vhost}.ssl ${ena}/${vhost}.ssl";
+            echo "Running: cp ${AVA_DIR}/${vhost}.ssl ${ENA_DIR}/${vhost}.ssl";
             a2ensite ${vhost}.ssl;
         fi
     fi
@@ -96,24 +112,6 @@ if [[ ${bool} == "y" || ${bool} == "Y" || ${bool} == "yes" || ${bool} == "YES" |
     read repo;
     git clone ${repo} /var/www/${vhost}/htdocs/
 fi
-
-bool="n";
-echo -n "Should i import a database from /var/www/${vhost}/htdocs/sql/ for you? ";
-read bool;
-if [[ ${bool} == "y" || ${bool} == "Y" || ${bool} == "yes" || ${bool} == "YES" || ${bool} == "Yes" ]]; then
-    echo -n "Supply password for database user: ";
-    read pass;
-    Q1="CREATE DATABASE IF NOT EXISTS ${vhost};";
-    Q2="GRANT ALL ON *.* TO 'matthisk'@'localhost' IDENTIFIED BY '${pass}';";
-    Q3="FLUSH PRIVILEGES;";
-    SQL="${Q1}${Q2}${Q3}";
-    mysql -uroot -p -e "${SQL}";
-
-    echo -n "Sql file name? ";
-    read sqlfile;
-    mysql -uroot -p${pass} ${vhost} < /var/www/${vhost}/htdocs/sql/${sqlfile};
-fi
-
 
 bool="n";
 echo -n "Should I restart Apache? ";
