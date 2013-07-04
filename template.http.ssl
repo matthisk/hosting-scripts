@@ -1,0 +1,54 @@
+# Template for ssl virtualhost
+# Author: Matthisk Heimensen
+#
+# Description:
+#
+# This can be used to create virtual hosts from the command line trough the mkvhost script
+#
+
+<IfModule mod_ssl.c>
+	<VirtualHost  *:443>
+
+	 #============#
+	 # SSL Config #
+	 #============#
+
+	 SSLEngine on
+	 SSLOptions +StrictRequire
+
+	 SSLProtocol -all +TLSv1 +SSLv3
+	 SSLCipherSuite HIGH:MEDIUM:!aNULL:+SHA1:+MD5:+HIGH:+MEDIUM
+
+	 SSLCertificateFile      /etc/ssl/server.crt
+	 SSLCertificateKeyFile   /etc/ssl/server.key
+
+	 SSLVerifyClient none
+	 SSLProxyEngine off
+
+	 #=================#
+	 # Document Config #
+	 #=================#
+
+	 ServerAdmin info@matthisk.nl
+	 ServerName "replacevhost"
+	 DocumentRoot "/var/www/replacevhost/htdocs"
+
+	 <Directory />
+	   SSLRequireSSL
+	   Options FollowSymLinks
+	   AllowOverride None
+	 </Directory>
+
+	 <Directory /var/www/replacevhost/htdocs>
+	         Options All MultiViews ExecCGI
+	         AllowOverride all
+	         Order allow,deny
+	         allow from all
+	 </Directory>
+
+	 ErrorLog ${APACHE_LOG_DIR}/replacevhost.ssl.error.log
+	 # Possible values include: debug, info, notice, warn, error, crit, alert, emerg.
+	 LogLevel warn
+	 CustomLog ${APACHE_LOG_DIR}/replacevhost.ssl.access.log combined
+	</VirtualHost>
+</IfModule>

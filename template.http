@@ -1,0 +1,30 @@
+# Template for virtualhost
+# Author: Matthisk Heimensen
+#
+# Description:
+#
+# This can be used to create virtual hosts from the command line trough the mkvhost script
+#
+
+<VirtualHost *:80>
+        ServerAdmin server@admin.com
+
+        ServerName replacevhost.replacedomain
+        DocumentRoot /var/www/replacevhost/htdocs
+        <Directory />
+                Options FollowSymLinks
+                AllowOverride None
+        </Directory>
+        <Directory /var/www/replacevhost/htdocs>
+                Options All MultiViews ExecCGI
+                AllowOverride all
+                Order allow,deny
+                allow from all
+        </Directory>
+
+        ErrorLog ${APACHE_LOG_DIR}/replacevhost.error.log
+        # Possible values include: debug, info, notice, warn, error, crit,
+        # alert, emerg.
+        LogLevel warn
+        CustomLog ${APACHE_LOG_DIR}/replacevhost.access.log combined
+</VirtualHost>

@@ -3,7 +3,7 @@
 # Author: Matthisk Heimensen
 #
 # This script makes a virtual host and creates a directory for it.
-# Optionally it can clone a git reposistory to this directory and
+# Optionally it can clone a git reposistory to this directory
 
 ROOT_UID=0;         # Only users  with $UID 0 have root privileges
 E_NOTROOT=87;       # Non-root exit error
@@ -42,7 +42,7 @@ else
     if [[ ! -e ${AVA_DIR}/template.http ]]; then
         echo "${AVA_DIR}/template.http does not exist. Cannot create ${ENA_DIR}/${vhost}.";
     else
-        cat ${AVA_DIR}/template.http | sed "s/replacevhost/${replacevhost}/g" | sed "s/replacedomain/${replacedomain}/g" > ${AVA_DIR}/${vhost}
+        cat ${AVA_DIR}/template.http | sed "s/replacevhost/${vhost}/g" > ${AVA_DIR}/${vhost}
     fi
 fi
 
@@ -55,7 +55,7 @@ else
     if [[ ! -e ${AVA_DIR}/template.http.ssl ]]; then
         echo "${AVA_DIR}/template.http.ssl does not exist. Cannot create ${ENA_DIR}/${vhost}.ssl.";
     else
-        cat ${AVA_DIR}/template.http.ssl | sed "s/replacevhost/${replacevhost}/g" | sed "s/replacedomain/${replacedomain}/g" > ${AVA_DIR}/${vhost}.ssl
+        cat ${AVA_DIR}/template.http.ssl | sed "s/replacevhost/${vhost}/g" > ${AVA_DIR}/${vhost}.ssl
     fi
 fi
 
@@ -64,12 +64,12 @@ echo -n "Should I enable ${AVA_DIR}/${vhost}? ";
 read bool;
 if [[ ${bool} == "y" || ${bool} == "Y" || ${bool} == "yes" || ${bool} == "YES" || ${bool} == "Yes" ]]; then
     if [[ -e ${ENA_DIR}/${vhost} ]]; then
-        echo "Host was already ENA_DIRbled.";
+        echo "Host was already enabled.";
     else
         if [[ ! -e ${AVA_DIR}/${vhost} ]]; then
             echo "${AVA_DIR}/${vhost} does not exist so I cannot enable it.";
         else
-            echo "Running: cp ${AVA_DIR}/${vhost} ${ENA_DIR}/${vhost}";
+            echo "Running: a2ensite ${vhost}";
             a2ensite ${vhost};
         fi
     fi
@@ -80,37 +80,46 @@ echo -n "Should I enable ${AVA_DIR}/${vhost}.ssl? ";
 read bool;
 if [[ ${bool} == "y" || ${bool} == "Y" || ${bool} == "yes" || ${bool} == "YES" || ${bool} == "Yes" ]]; then
     if [[ -e ${ENA_DIR}/${vhost}.ssl ]]; then
-        echo "Host was already ENA_DIRbled.";
+        echo "Host was already enabled.";
     else
         if [[ ! -e ${AVA_DIR}/${vhost}.ssl ]]; then
             echo "${AVA_DIR}/${vhost}.ssl does not exist so I cannot enable it.";
         else
-            echo "Running: cp ${AVA_DIR}/${vhost}.ssl ${ENA_DIR}/${vhost}.ssl";
+            echo "Running: a2ensite ${vhost}.ssl";
             a2ensite ${vhost}.ssl;
         fi
     fi
 fi
 
 bool="n";
-echo -n "Should I create /var/www/${vhost}/htdocs for you? ";
+echo -n "Should I create /var/www/${vhost} for you? ";
 read bool;
 if [[ ${bool} == "y" || ${bool} == "Y" || ${bool} == "yes" || ${bool} == "YES" || ${bool} == "Yes" ]]; then
-    if [[ -e /var/www/${vhost}/htdocs ]]; then
-        echo "/var/www/${vhost}/htdocs already existed.";
+    if [[ -e /var/www/${vhost} ]]; then
+        echo "/var/www/${vhost} already existed.";
     else
-        mkdir -p /var/www/${vhost}/htdocs;
-        chown -R www-data /var/www/${vhost};
+        mkdir -p /var/www/${vhost};
         chmod -R 755 /var/www/${vhost};
     fi
 fi
 
 bool="n";
-echo -n "Should I clone a git repo into /var/www/${vhost}/htdocs for you? ";
+echo -n "Should I clone a git repo into /var/www/${vhost} for you? ";
 read bool;
 if [[ ${bool} == "y" || ${bool} == "Y" || ${bool} == "yes" || ${bool} == "YES" || ${bool} == "Yes" ]]; then
     echo -n "Git repo location? ";
     read repo;
-    git clone ${repo} /var/www/${vhost}/htdocs/
+    git clone ${repo} /var/www/${vhost}/
+    if [ -d /var/www/${vhost}/htdocs ]; then        # If the git repository has a htdocs directory, make www-data the owner
+        chown -R www-data /var/www/${vhost}/htdocs;
+    fi
+else
+    if [ -d /var/www/${vhost}/htdocs ]; then
+        :
+    else
+        mkdir /var/www/${vhost}/htdocs;
+        chown -R www-data /var/www/${vhost}/htdocs;
+    fi
 fi
 
 bool="n";
