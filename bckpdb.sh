@@ -11,7 +11,7 @@ NO_ARGS=0
 E_OPTERROR=85
 
 if [ $# -eq "$NO_ARGS" ]; then                       # Script invoked with no command-line args
-    echo "Usage: `basename $0` options (-upfh)"
+    echo "Usage: `basename $0` options (-hdncr)"
     exit $E_OPTERROR                                # Exit and explain usage
 fi
 
@@ -84,8 +84,9 @@ DATE=`date +%F\(%T\)`
 # Dump the sql
 mysqldump -u $USER -p${PASS} $DATABASE > $DUMP_DIR/$NAME-$DATE.sql
 
-# Only root can read or write to the dump directory
-chmod 700 -R $DUMP_DIR
+# Only root can read or write to the dump directory and devs can read
+chmod 750 $DUMP_DIR/$NAME-$DATE.sql
+chgrp devs $DUMP_DIR/$NAME-$DATE.sql
 
 if [ -z "$RM_OLDER" ]; then
 	echo "Not removing any old database backups"
