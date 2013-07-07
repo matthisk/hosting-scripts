@@ -62,10 +62,10 @@ else
     exit $E_OPTERROR
 fi
 
+# if the password is not set we generate a random password
 if [ -z "$PASS" ]; then
-    echo "Error: you must specify a password using -p"
-    usage
-    exit $E_OPTERROR
+    PASS=$(openssl rand -base64 32)
+    echo "Random password generated: ${PASS}"
 fi
 
 
@@ -74,7 +74,7 @@ echo -n "What name to use for the database: ";
 read dbname;
 
 # SQL for creating a new database and user
-Q1="CREATE DATABASE IF NOT EXISTS ${dbname};";
+Q1="CREATE DATABASE IF NOT EXISTS \`${dbname}\`;";
 Q2="GRANT ALL ON *.* TO '${USER}'@'localhost' IDENTIFIED BY '${PASS}';";
 Q3="FLUSH PRIVILEGES;";
 SQL="${Q1}${Q2}${Q3}";
@@ -85,3 +85,30 @@ mysql -uroot -p -e "${SQL}";
 
 # Run the sql from the supplied file using the newly created database
 mysql -u${USER} -p${PASS} ${dbname} < ${FILE};
+
+bool="n"
+echo -n "Create a my.cnf one level above the directory where sql is stored? "
+read bool
+if [[ ${bool} == "y" || ${bool} == "Y" || ${bool} == "yes" || ${bool} == "YES" || ${bool} == "Yes" ]]; then
+    mycnf=$(dirname ${FILE})/../my.cnf
+    cat /dev/null > $mycnf
+    echo "USER=${USER}" >> $mycnf
+    echo "PASS=${PASS}" >> $mycnf
+    echo "DATABASE=${dbname}" >> $mycnf
+    chmod 700 $mycnf
+
+    bool="n"
+    echo -n "Create a cron job to backup the database? "
+    read bool
+    if [[ ${bool} == "y" || ${bool} == "Y" || ${bool} == "yes" || ${bool} == "YES" || ${bool} == "Yes" ]]; then
+        TEMP=$(tempfile)
+        crontab -l > $TEMP
+        DIR=$(readlink -f $(dirname ${FILE})/..)
+        echo "0 3 * * * dbbckp -n ${dbname} -c ${DIR}/my.cnf -d ${DIR}/sql -r 5" >> $TEMP
+        crontab $TEMP
+        rm $TEMP
+    fi
+fi
+
+exit 0
+

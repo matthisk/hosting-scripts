@@ -91,15 +91,22 @@ if [[ ${bool} == "y" || ${bool} == "Y" || ${bool} == "yes" || ${bool} == "YES" |
     fi
 fi
 
-bool="n";
-echo -n "Should I create /var/www/${vhost} for you? ";
-read bool;
-if [[ ${bool} == "y" || ${bool} == "Y" || ${bool} == "yes" || ${bool} == "YES" || ${bool} == "Yes" ]]; then
-    if [[ -e /var/www/${vhost} ]]; then
-        echo "/var/www/${vhost} already existed.";
-    else
-        mkdir -p /var/www/${vhost};
-        chmod -R 755 /var/www/${vhost};
+if [ -d "/var/www/{$vhost}" ]; then
+    echo "Directory /var/www/${vhost} already exists, not creating it";
+    # make sure everyone can read the vhost directory (otherwise apache will give a forbidden message)
+    chmod 755 /var/www/${vhost}
+else
+    bool="n";
+    echo -n "Should I create /var/www/${vhost} for you? ";
+    read bool;
+    if [[ ${bool} == "y" || ${bool} == "Y" || ${bool} == "yes" || ${bool} == "YES" || ${bool} == "Yes" ]]; then
+        if [[ -e /var/www/${vhost} ]]; then
+            echo "/var/www/${vhost} already existed.";
+        else
+            mkdir -p /var/www/${vhost};
+            # same as above apache needs to read this directory (even if it is not the htdocs dir)
+            chmod -R 755 /var/www/${vhost};
+        fi
     fi
 fi
 
@@ -111,14 +118,14 @@ if [[ ${bool} == "y" || ${bool} == "Y" || ${bool} == "yes" || ${bool} == "YES" |
     read repo;
     git clone ${repo} /var/www/${vhost}/
     if [ -d /var/www/${vhost}/htdocs ]; then        # If the git repository has a htdocs directory, make www-data the owner
-        chown -R www-data /var/www/${vhost}/htdocs;
+        chgrp -R devs /var/www/${vhost};
     fi
 else
     if [ -d /var/www/${vhost}/htdocs ]; then
         :
     else
         mkdir /var/www/${vhost}/htdocs;
-        chown -R www-data /var/www/${vhost}/htdocs;
+        chgrp -R devs /var/www/${vhost};
     fi
 fi
 
@@ -129,3 +136,5 @@ if [[ ${bool} == "y" || ${bool} == "Y" || ${bool} == "yes" || ${bool} == "YES" |
     echo "Running: service apache2 restart";
     service apache2 restart;
 fi
+
+exit 0

@@ -24,14 +24,16 @@ usage()
     echo "  -n, --name=HOST  the hostname of the database we are backupping (for file naming)">&2
     echo "  -c, --cnf=CONF   where we can find the conf file with database specifics">&2
     echo "  -d, --dir=CONF   where to dump the backup of the database">&2
+    echo "  -r, --rm=DAYS    remove backup files older then DAYS days">&2
 }
 
-while getopts "h?d:n:c:" opt; do
+while getopts "h?d:n:c:r:" opt; do
     case "$opt" in
         h)  usage; exit 0;;
 		d)  DUMP_DIR=$OPTARG;;
         n)  NAME=$OPTARG;;
         c)  CONF=$OPTARG;;
+        r)  RM_OLDER=$OPTARG;;
         \?)
             echo "Invalid option: -$OPTARG" >&2
             exit $E_OPTERROR
@@ -81,4 +83,14 @@ DATE=`date +%F\(%T\)`
 
 # Dump the sql
 mysqldump -u $USER -p${PASS} $DATABASE > $DUMP_DIR/$NAME-$DATE.sql
+
+# Only root can read or write to the dump directory
+chmod 700 -R $DUMP_DIR
+
+if [ -z "$RM_OLDER" ]; then
+	echo "Not removing any old database backups"
+else
+	find $DUMP_DIR -type f -mtime +$RM_OLDER -delete
+fi
+
 exit 0
