@@ -16,7 +16,7 @@
                 AllowOverride None
         </Directory>
         <Directory /var/www/replacevhost/htdocs>
-                Options All MultiViews ExecCGI
+                # Options All MultiViews ExecCGI
                 AllowOverride all
                 Order allow,deny
                 allow from all
